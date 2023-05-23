@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "minishell.h": "c",
+        "jobs.h": "c",
+        "type_traits": "c",
+        "process.h": "c",
+        "fcntl.h": "c",
+        "stdbool.h": "c",
+        "stdlib.h": "c"
+    }
+}

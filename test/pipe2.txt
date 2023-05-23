@@ -1,0 +1,2 @@
+Enter a word:
+The word you wrote was:	Enter a word:
