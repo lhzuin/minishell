@@ -3,10 +3,12 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror
 TARGET = shell
 SRC = main.c
-MINISHELL_SRC = minishell/minishell.c
+SHELL_SRC = minishell/shell.c
 JOBS_SRC = minishell/jobs.c
 PROCESS_SRC = minishell/process.c
-OBJ = main.o minishell.o jobs.o process.o
+PARSER_SRC = minishell/parser.c
+UTILS_SRC = minishell/utils.c
+OBJ = main.o shell.o jobs.o process.o parser.o utils.o
 PROJECT_NAME = minishell
 
 
@@ -26,10 +28,10 @@ main.o: $(SRC)
 	$(CC) $(CFLAGS) -c $(SRC)
 
 # Generates object file for minishell
-minishell.o: $(MINISHELL_SRC)
+shell.o: $(SHELL_SRC)
 	@echo "Generating object file for minishell"
-	@echo "Usage: $(CC) $(CFLAGS) -c $(MINISHELL_SRC)"
-	$(CC) $(CFLAGS) -c $(MINISHELL_SRC)
+	@echo "Usage: $(CC) $(CFLAGS) -c $(SHELL_SRC)"
+	$(CC) $(CFLAGS) -c $(SHELL_SRC)
 
 # Generates object file for jobs
 jobs.o: $(JOBS_SRC)
@@ -42,6 +44,18 @@ process.o: $(PROCESS_SRC)
 	@echo "Generating object file for process"
 	@echo "Usage: $(CC) $(CFLAGS) -c $(PROCESS_SRC)"
 	$(CC) $(CFLAGS) -c $(PROCESS_SRC)
+
+# Generates object file for parser
+parser.o: $(PARSER_SRC)
+	@echo "Generating object file for parser"
+	@echo "Usage: $(CC) $(CFLAGS) -c $(PARSER_SRC)"
+	$(CC) $(CFLAGS) -c $(PARSER_SRC)
+
+# Generates object file for utils
+utils.o: $(UTILS_SRC)
+	@echo "Generating object file for utils"
+	@echo "Usage: $(CC) $(CFLAGS) -c $(UTILS_SRC)"
+	$(CC) $(CFLAGS) -c $(UTILS_SRC)
 
 # Runs target
 run: 

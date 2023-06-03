@@ -5,9 +5,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <errno.h>
 
-void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int pipe_idx, ParsedCmd *parsed_cmds)
-{
+void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int pipe_idx, ParsedCmd *parsed_cmds, char *cmd_line)
+{//talvez alterar para Job **last_job
     //printf("0\n");
     //printf("parsed_cmd[0]: %s\n", parsed_cmds->args[0]);
     //printf("parsed_cmd[1]: %s\n", (parsed_cmds + 1)->args[0]);
@@ -15,8 +16,10 @@ void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int
 
     (*new_job)->stdin = input_fds;
     (*new_job)->stdout = output_fds;
-    (*new_job)->pgid = last_job->pgid + 1;
+    (*new_job)->pgid = last_job->pgid + 1;//0;//last_job->pgid + 1; //0; //
     (*new_job)->first_process = NULL;
+    (*new_job)->command = ((char *)malloc(LINE_MAX_SIZE*sizeof(char)));
+    strcpy((*new_job)->command, cmd_line);
 
     last_job->next = *new_job;
 
@@ -27,80 +30,6 @@ void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int
     
 }
 
-void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx)
-{
-    //printf("2\n");
-    Process *p = new_job->first_process; 
-    int pipefds[2];
-    int pid;
-
-    for (int i = 0; i < pipe_idx; i++, p = p->next)
-    {
-        //printf("5\n");
-        if (check_exit(p->argv))
-        {
-            print_exit();
-            exit(0); //alterar para incluir free
-        }
-
-        // Setup pipes
-        //printf("6\n");
-        if (i < pipe_idx -1)
-        {
-            if (pipe(pipefds) < 0)
-                exit(-1);
-            
-            output_fds = pipefds[1];
-            //printf("7\n");
-        }
-        else
-        {
-            //printf("8\n");
-            output_fds = new_job->stdout;
-        }
-
-        // Creates parallel process
-        pid = fork();
-        if (pid == 0) // Child process
-        {
-            //printf("9\n");
-            //printf("input_fds: %d\n", input_fds);
-            //printf("output_fds: %d\n", output_fds);
-            launch_process(p, input_fds, output_fds);
-        }
-        else if (pid < 0)
-        {
-            printf("%sFailed to do fork%s\n",YELLOW, RESET);
-            exit(-1);
-        }
-        else
-        {
-            //printf("10\n");
-            // Waits for Child Process to finish
-            p->pid = pid;
-            //wait(NULL);
-        }
-        
-        if (input_fds != new_job->stdin && input_fds != STDIN_FILENO)
-            close(input_fds);
-
-        if (output_fds != new_job->stdout && output_fds != STDOUT_FILENO)
-            close(output_fds);
-        input_fds = pipefds[0];
-
-    }
-    // Waits for all child processes to finish
-    int status;
-    while ((pid = wait(&status)) != -1)
-        continue;
-        //printf("pid: %d", pid);
-    //wait(NULL); 
-    if (new_job->stdin != STDIN_FILENO)
-        close(new_job->stdin);
-    if(new_job->stdout != STDOUT_FILENO)
-        close(new_job->stdout);
-    //printf("3\n");
-}
 
 void free_jobs(Job *first_job)
 {
@@ -114,4 +43,69 @@ void free_jobs(Job *first_job)
         free_processes(last_job->first_process);
         free(last_job);
     }
+}
+
+/* Find the active job with the indicated pgid.  */
+Job *find_job (pid_t pgid, Job *first_job)
+{
+  Job *j;
+  for (j = first_job; j; j = j->next)
+    if (j->pgid == pgid)
+      return j;
+  printf("F\n");
+  fflush(stdout);
+  return NULL;
+}
+
+/* Return true if all processes in the job have stopped or completed.  */
+bool job_is_stopped (Job *j)
+{
+  Process *p;
+
+  for (p = j->first_process; p; p = p->next)
+    if (!p->completed && !p->stopped)
+      return false;
+  return true;
+}
+
+/* Return true if all processes in the job have completed.  */
+bool job_is_completed (Job *j)
+{
+  Process *p;
+
+  for (p = j->first_process; p; p = p->next)
+    if (!p->completed)
+      return false;
+  return true;
+}
+
+
+
+/* Mark a stopped job J as being running again.  */
+
+void mark_job_as_running (Job *j)
+{
+    Process *p;
+
+    for (p = j->first_process; p; p = p->next)
+        p->stopped = false;
+    j->notified = false;
+}
+
+
+/* Format information about job status for the user to look at.  */
+
+void format_job_info (Job *j, const char *status)
+{
+  fprintf (stderr, "%ld (%s): %s\n", (long)j->pgid, status, j->command);
+}
+
+
+void display_jobs(Job *first_job)
+{
+  for (Job *j = first_job; j != NULL; j = j->next)
+  {
+    if (!job_is_completed(j) && job_is_stopped(j))
+      printf ("[%ld]\tStopped\t\t%s\n", (long)j->pgid, j->command);
+  }
 }

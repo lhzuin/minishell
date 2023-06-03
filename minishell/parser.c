@@ -4,9 +4,28 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "minishell.h"
+#include "parser.h"
 #include <stdbool.h>
-#include "process.h"
+#include <signal.h>
+
+
+void print_welcome()
+{
+    printf("%s\t _____  _____  _____     ____ ____  \n",MAGENTA);
+    printf("\t/ ____|/ ____|/ ____|   |___ \\___ \\ \n");
+    printf("\t| |    | (___ | |   ______ _)|___) |\n");
+    printf("\t| |     \\___ \\| |  |______|__<|__ < \n");
+    printf("\t| |____ ____) | |____    ___)|___) |\n");
+    printf("\t\\_____|_____/ \\_____|   |____/____/ \n");
+    printf("\n%s************* Welcome to CSC-33 Mini Shell *************%s\n", RED, RESET);
+    return;
+}
+
+void print_exit()
+{
+    printf("\n%s********* Thank You for using CSC-33 Mini Shell *********%s\n", RED, RESET);
+    return;
+}
 
 void allocate_mem(ParsedCmd *parsed_cmd)
 {
@@ -81,25 +100,8 @@ void free_args(int i, ParsedCmd *parsed_cmd)
     return;
 }
 
-void print_welcome()
-{
-    printf("%s\t _____  _____  _____     ____ ____  \n",MAGENTA);
-    printf("\t/ ____|/ ____|/ ____|   |___ \\___ \\ \n");
-    printf("\t| |    | (___ | |   ______ _)|___) |\n");
-    printf("\t| |     \\___ \\| |  |______|__<|__ < \n");
-    printf("\t| |____ ____) | |____    ___)|___) |\n");
-    printf("\t\\_____|_____/ \\_____|   |____/____/ \n");
-    printf("\n%s************* Welcome to CSC-33 Mini Shell *************%s\n", RED, RESET);
-    return;
-}
 
-void print_exit()
-{
-    printf("\n%s********* Thank You for using CSC-33 Mini Shell *********%s\n", RED, RESET);
-    return;
-}
-
-int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int *output_fds)
+int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], char *cmd_line, int *input_fds, int *output_fds)
 {
     char *inp;
     char cmd[LINE_MAX_SIZE];
@@ -107,6 +109,8 @@ int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], int *input
 
     printf("\n%sCSC33 -> %s", GREEN, RESET);
     inp = fgets(cmd, sizeof(cmd), stdin);
+    strcpy(cmd_line, inp);
+
     if (inp == NULL)
     {
         print_exit();
@@ -127,6 +131,15 @@ bool check_exit(char **args)
     return strcmp(args[0], "exit") == 0;
 }
 
+bool check_jobs(char **args)
+{
+    return strcmp(args[0], "jobs") == 0;
+}
+
+bool check_fg(char **args)
+{
+    return strcmp(args[0], "fg") == 0;
+}
 
 void format_file_name(char **word)
 {
@@ -258,3 +271,4 @@ int parse_pipe(char* line, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int 
     //free_args(i, parsed_cmd);
     return i;
 } 
+

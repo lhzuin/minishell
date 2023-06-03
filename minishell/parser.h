@@ -1,7 +1,8 @@
 // minishell.h
-#ifndef MINISHELL_H
-#define MINISHELL_H
+#ifndef PARSER_H
+#define PARSER_H
 #include <stdbool.h>
+#include <termios.h>
 //#include "jobs.h"
 
 // Your header file content (function prototypes, type definitions, etc.)
@@ -24,15 +25,16 @@ typedef struct ParsedCmd
     char *args[MAX_NUM_OF_ARGS];
 } ParsedCmd;
 
+void print_welcome();
+void print_exit();
 void allocate_mem(ParsedCmd *parsed_cmd);
 void free_mem(ParsedCmd *parsed_cmd);
 void free_args(int i, ParsedCmd *parsed_cmd);
-void print_welcome();
-void print_exit();
-int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int *output_fds);
+int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], char *cmd_line, int *input_fds, int *output_fds);
 void read_cmd(ParsedCmd *parsed_cmd);
-//bool check_exit(ParsedCmd *parsed_cmd);
 bool check_exit(char **args);
+bool check_jobs(char **args);
+bool check_fg(char **args);
 void format_word(char **word);
 void clean_responses(ParsedCmd *parsed_cmd);
 void parse_process(char* cmd, ParsedCmd *parsed_cmd);

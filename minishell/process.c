@@ -26,49 +26,13 @@ void create_process_linked_list(int pipe_idx, ParsedCmd *parsed_cmds, Process **
     {
         parsed_cmd = parsed_cmds + i;
         create_process(&last_process, first_process, parsed_cmd->args);
+        printf("created process\n");
         if(i == 0) // if this is the first process
             *first_process = last_process; // point first_process to it
         first_process = &((*first_process)->next); // shift the first_process pointer
     }
 }
 
-
-void launch_process(Process *p, int input_fds, int output_fds)
-{
-    //printf("11\n");
-    //printf("p->argv[0]: %s", p->argv[0]);
-    if (input_fds < 0)
-    {
-        printf("%sError: input fd cannot be negative%s\n",YELLOW, RESET);
-        exit(1);
-    }
-    if (output_fds < 0)
-    {
-        printf("%sError: output fd cannot be negative%s\n",YELLOW, RESET);
-        exit(1);
-    }
-        
-    if (input_fds != STDIN_FILENO && dup2(input_fds, STDIN_FILENO) < 0)
-    {
-        printf("%sError redirecting stdin%s\n",YELLOW, RESET);
-        close(input_fds);
-        exit(-1);
-    }
-    //printf("17");
-    if (output_fds != STDOUT_FILENO && dup2(output_fds, STDOUT_FILENO) < 0)
-    {
-        printf("%sError redirecting stdout%s\n",YELLOW, RESET);
-        close(output_fds);
-        exit(-1);
-    }
-    //printf("12\n");
-    // Execute command
-    execv(p->argv[0], p->argv);
-
-    // If execv fails
-    printf("%sDidn't recognize command%s",YELLOW, RESET);
-    exit(1);
-}
 
 
 void free_processes(Process *first_process)
