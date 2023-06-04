@@ -18,6 +18,7 @@ typedef struct Job
   bool notified;              /* true if user told about stopped job */
   struct termios tmodes;      /* saved terminal modes */
   int stdin, stdout;  /* standard i/o channels */
+  int job_id;
 } Job;
 
 void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int pipe_idx, ParsedCmd *parsed_cmds, char *cmd_line);

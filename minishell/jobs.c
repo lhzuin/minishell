@@ -16,7 +16,8 @@ void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int
 
     (*new_job)->stdin = input_fds;
     (*new_job)->stdout = output_fds;
-    (*new_job)->pgid = last_job->pgid + 1;//0;//last_job->pgid + 1; //0; //
+    (*new_job)->pgid = 0; //
+    (*new_job)->job_id = last_job->job_id + 1;
     (*new_job)->first_process = NULL;
     (*new_job)->command = ((char *)malloc(LINE_MAX_SIZE*sizeof(char)));
     strcpy((*new_job)->command, cmd_line);
@@ -106,6 +107,6 @@ void display_jobs(Job *first_job)
   for (Job *j = first_job; j != NULL; j = j->next)
   {
     if (!job_is_completed(j) && job_is_stopped(j))
-      printf ("[%ld]\tStopped\t\t%s\n", (long)j->pgid, j->command);
+      printf ("[%d] %ld\tStopped\t\t%s\n", j->job_id, (long)j->pgid, j->command);
   }
 }

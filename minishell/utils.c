@@ -41,7 +41,7 @@ void init_shell (Shell *shell)
 
         /* Put ourselves in our own process group.  */
         shell->shell_pgid = getpid ();
-        //shell->first_job->pgid = shell->shell_pgid; //teste
+        shell->first_job->pgid = shell->shell_pgid; //teste
         if (setpgid (shell->shell_pgid, shell->shell_pgid) < 0)
         {
             perror ("Couldn't put the shell in its own process group");
@@ -126,8 +126,8 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
             p->pid = pid;
             if(shell->shell_is_interactive)
             {
-                //if(!new_job->pgid)
-                    //new_job->pgid = pid;
+                if(!new_job->pgid)
+                    new_job->pgid = pid;
                 setpgid(pid, new_job->pgid);
             }
             //wait(NULL);
@@ -236,7 +236,9 @@ void put_job_in_foreground (Job *j, Shell *shell, bool cont)
 
     /* Send the job a continue signal, if necessary.  */
     if (cont)
-    {
+    {   
+        printf("shell_terminal: %d\n", shell->shell_terminal);
+        printf("shell_pgid: %ld\n", (long)shell->shell_pgid);
         tcsetattr (shell->shell_terminal, TCSADRAIN, &j->tmodes);
         if (kill (- j->pgid, SIGCONT) < 0)
             perror ("kill (SIGCONT)");
@@ -244,7 +246,6 @@ void put_job_in_foreground (Job *j, Shell *shell, bool cont)
         //if (kill (- j->first_process->pid, SIGCONT) < 0)
             //perror ("kill (SIGCONT)");
     }
-
 
     /* Wait for it to report.  */
     wait_for_job (j, shell);
@@ -290,6 +291,7 @@ int mark_process_status (pid_t pid, int status, Shell *shell)
 {
     Job *j;
     Process *p;
+    printf("mark_process: %ld\n", (long) pid);
 
     if (pid > 0)
     {
@@ -300,11 +302,15 @@ int mark_process_status (pid_t pid, int status, Shell *shell)
                 {
                     p->status = status;
                     if (WIFSTOPPED (status))
-                        p->stopped = 1;
+                    {
+                        printf("Stopped\n");
+                        p->stopped = true;
+                    }
+                        
                     else
                     {
                         printf("Completed\n");
-                        p->completed = 1;
+                        p->completed = true;
                         if (WIFSIGNALED (status))
                         fprintf (stderr, "%d: Terminated by signal %d.\n", (int) pid, WTERMSIG (p->status));
                     }

@@ -16,9 +16,11 @@ Shell *create_shell()
     Shell *shell = ((Shell *)malloc(sizeof(Shell)));
     first_job->first_process = NULL;
     first_job->pgid = 0;
+    first_job->job_id = 0;
     shell->first_job = first_job;
     shell->shell_is_interactive = true;
     shell->shell_pgid = 0;
+    //shell->shell_pgid = getpgrp();
     shell->shell_terminal = 0; //?
     return shell;
 }
