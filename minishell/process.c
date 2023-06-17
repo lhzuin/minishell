@@ -26,7 +26,6 @@ void create_process_linked_list(int pipe_idx, ParsedCmd *parsed_cmds, Process **
     {
         parsed_cmd = parsed_cmds + i;
         create_process(&last_process, first_process, parsed_cmd->args);
-        printf("created process\n");
         if(i == 0) // if this is the first process
             *first_process = last_process; // point first_process to it
         first_process = &((*first_process)->next); // shift the first_process pointer
@@ -46,4 +45,10 @@ void free_processes(Process *first_process)
         p = p->next;
         free(last_p);
     }
+}
+
+void print_process(Process* p)
+{
+  printf("Process: \nstatus: %d\npid: %ld\ncompleted: %d\nstopped: %d\n", p->status, (long)p->pid, p->completed, p->stopped);
+
 }

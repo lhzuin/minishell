@@ -25,6 +25,7 @@ typedef struct Shell
     int shell_terminal;
     bool shell_is_interactive;
     Job *first_job; //list of active jobs
+    char *cmd_line; //last input line
 } Shell;
 
 Shell *create_shell();

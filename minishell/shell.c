@@ -1,4 +1,3 @@
-//#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -6,22 +5,17 @@
 #include <sys/stat.h>
 #include "shell.h"
 #include <stdbool.h>
-//#include "process.h"
 #include <signal.h>
 
 
 Shell *create_shell()
 {
-    Job *first_job = ((Job *)malloc(sizeof(Job)));
     Shell *shell = ((Shell *)malloc(sizeof(Shell)));
-    first_job->first_process = NULL;
-    first_job->pgid = 0;
-    first_job->job_id = 0;
-    shell->first_job = first_job;
+    shell->first_job = NULL;
     shell->shell_is_interactive = true;
     shell->shell_pgid = 0;
-    //shell->shell_pgid = getpgrp();
-    shell->shell_terminal = 0; //?
+    shell->shell_terminal = 0;
+    shell->cmd_line = ((char *)malloc(LINE_MAX_SIZE*sizeof(char)));
     return shell;
 }
 
@@ -29,5 +23,7 @@ Shell *create_shell()
 void free_shell(Shell *shell)
 {
     free_jobs(shell->first_job);
+    if(shell->cmd_line != NULL)
+        free(shell->cmd_line);
     free(shell);
 }

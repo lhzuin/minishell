@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdbool.h>
-//#include "process.h"
 #include <signal.h>
 #include <sys/wait.h>
 #include <errno.h>
@@ -41,7 +40,7 @@ void init_shell (Shell *shell)
 
         /* Put ourselves in our own process group.  */
         shell->shell_pgid = getpid ();
-        shell->first_job->pgid = shell->shell_pgid; //teste
+
         if (setpgid (shell->shell_pgid, shell->shell_pgid) < 0)
         {
             perror ("Couldn't put the shell in its own process group");
@@ -52,56 +51,29 @@ void init_shell (Shell *shell)
         tcsetpgrp (shell->shell_terminal, shell->shell_pgid);
 
         /* Save default terminal attributes for shell.  */
-        tcgetattr (shell->shell_terminal, &(shell->shell_tmodes));
+        if (tcgetattr (shell->shell_terminal, &(shell->shell_tmodes)) == -1)
+            perror("tcgetattr");;
     }
 }
 
 void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool foreground, Shell *shell)
 {
-    //printf("2\n");
     Process *p = new_job->first_process; 
     int pipefds[2];
     int pid;
 
     for (int i = 0; i < pipe_idx; i++, p = p->next)
     {
-        //printf("5\n");
-        if (check_exit(p->argv))
-        {
-            print_exit();
-            exit(0); //alterar para incluir free
-        }
-        else if (check_jobs(p->argv))
-        {
-            display_jobs(shell->first_job);
-            return;
-            //break;
-        }
-        else if (check_fg(p->argv)) // checar se faz algum sentido
-        {
-            pid_t pgid = (pid_t) atoi(p->argv[1]);
-            printf("%ld\n", (long)pgid);
-            Job *j = find_job(pgid, shell->first_job);
-            printf("%ld\n", (long)j->pgid);
-            fflush(stdout);
-            continue_job(j, shell, true);
-            return;
-            //break;
-        }
-
         // Setup pipes
-        //printf("6\n");
         if (i < pipe_idx -1)
         {
             if (pipe(pipefds) < 0)
                 exit(-1);
             
             output_fds = pipefds[1];
-            //printf("7\n");
         }
         else
         {
-            //printf("8\n");
             output_fds = new_job->stdout;
         }
 
@@ -109,9 +81,6 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
         pid = fork();
         if (pid == 0) // Child process
         {
-            //printf("9\n");
-            //printf("input_fds: %d\n", input_fds);
-            //printf("output_fds: %d\n", output_fds);
             launch_process(p, new_job->pgid, input_fds, output_fds, foreground, shell);
         }
         else if (pid < 0)
@@ -121,7 +90,6 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
         }
         else
         {
-            //printf("10\n");
             // Waits for Child Process to finish
             p->pid = pid;
             if(shell->shell_is_interactive)
@@ -130,7 +98,6 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
                     new_job->pgid = pid;
                 setpgid(pid, new_job->pgid);
             }
-            //wait(NULL);
         }
         
         if (input_fds != new_job->stdin && input_fds != STDIN_FILENO)
@@ -141,7 +108,6 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
         input_fds = pipefds[0];
 
     }
-    format_job_info (new_job, "launched");
 
     if (!shell->shell_is_interactive)
         wait_for_job(new_job, shell);
@@ -149,23 +115,15 @@ void launch_job(Job *new_job, int input_fds, int output_fds, int pipe_idx, bool 
         put_job_in_foreground(new_job, shell, false);
     else
         put_job_in_background(new_job, false);
-    // Waits for all child processes to finish
-    //int status;
-    //while ((pid = wait(&status)) != -1)
-        //continue;
-        //printf("pid: %d", pid);
-    //wait(NULL); 
+
     if (new_job->stdin != STDIN_FILENO)
         close(new_job->stdin);
     if(new_job->stdout != STDOUT_FILENO)
         close(new_job->stdout);
-    //printf("3\n");
 }
 
 void launch_process(Process *p, pid_t pgid, int input_fds, int output_fds, bool foreground, Shell *shell)
 {
-    //printf("11\n");
-    //printf("p->argv[0]: %s", p->argv[0]);
     pid_t pid;
     
     if (input_fds < 0)
@@ -207,14 +165,14 @@ void launch_process(Process *p, pid_t pgid, int input_fds, int output_fds, bool 
         close(input_fds);
         exit(-1);
     }
-    //printf("17");
+
     if (output_fds != STDOUT_FILENO && dup2(output_fds, STDOUT_FILENO) < 0)
     {
         printf("%sError redirecting stdout%s\n",YELLOW, RESET);
         close(output_fds);
         exit(-1);
     }
-    //printf("12\n");
+
     // Execute command
     execv(p->argv[0], p->argv);
 
@@ -231,20 +189,15 @@ void launch_process(Process *p, pid_t pgid, int input_fds, int output_fds, bool 
 void put_job_in_foreground (Job *j, Shell *shell, bool cont)
 {
     /* Put the job into the foreground.  */
-    //tcsetpgrp (shell_terminal, j->pgid);
+    tcsetpgrp (shell->shell_terminal, j->pgid);
 
 
     /* Send the job a continue signal, if necessary.  */
     if (cont)
     {   
-        printf("shell_terminal: %d\n", shell->shell_terminal);
-        printf("shell_pgid: %ld\n", (long)shell->shell_pgid);
         tcsetattr (shell->shell_terminal, TCSADRAIN, &j->tmodes);
         if (kill (- j->pgid, SIGCONT) < 0)
             perror ("kill (SIGCONT)");
-        
-        //if (kill (- j->first_process->pid, SIGCONT) < 0)
-            //perror ("kill (SIGCONT)");
     }
 
     /* Wait for it to report.  */
@@ -253,7 +206,7 @@ void put_job_in_foreground (Job *j, Shell *shell, bool cont)
     /* Put the shell back in the foreground.  */
     tcsetpgrp (shell->shell_terminal, shell->shell_pgid);
 
-    /* Restore the shell’s terminal modes.  */
+    /* Restore the shell terminal modes.  */
     tcgetattr (shell->shell_terminal, &j->tmodes);
     tcsetattr (shell->shell_terminal, TCSADRAIN, &(shell->shell_tmodes));
 }
@@ -291,7 +244,6 @@ int mark_process_status (pid_t pid, int status, Shell *shell)
 {
     Job *j;
     Process *p;
-    printf("mark_process: %ld\n", (long) pid);
 
     if (pid > 0)
     {
@@ -303,20 +255,18 @@ int mark_process_status (pid_t pid, int status, Shell *shell)
                     p->status = status;
                     if (WIFSTOPPED (status))
                     {
-                        printf("Stopped\n");
                         p->stopped = true;
                     }
                         
                     else
                     {
-                        printf("Completed\n");
                         p->completed = true;
                         if (WIFSIGNALED (status))
-                        fprintf (stderr, "%d: Terminated by signal %d.\n", (int) pid, WTERMSIG (p->status));
+                            printf("%s%d: Terminated by signal %d.%s\n",YELLOW, (int) pid, WTERMSIG (p->status), RESET);
                     }
                     return 0;
                 }
-        fprintf (stderr, "No child process %d.\n", pid);
+        printf("%sNo child process %d.%s\n",YELLOW, (int) pid, RESET);
         return -1;
     }
 
@@ -375,7 +325,6 @@ void do_job_notification (Job *first_job, Shell *shell)
         /* If all processes have completed, tell the user the job has
             completed and delete it from the list of active jobs.  */
         if (job_is_completed (j)) {
-            format_job_info (j, "completed");
             if (jlast)
                 jlast->next = jnext;
             else
@@ -385,15 +334,53 @@ void do_job_notification (Job *first_job, Shell *shell)
         }
 
         /* Notify the user about stopped jobs,
-            marking them so that we won’t do this more than once.  */
+            marking them so that we wont do this more than once.  */
         else if (job_is_stopped (j) && !j->notified) {
-            format_job_info (j, "stopped");
             j->notified = 1;
             jlast = j;
         }
 
-        /* Don’t say anything about jobs that are still running.  */
+        /* Dont say anything about jobs that are still running.  */
         else
             jlast = j;
     }
+}
+
+
+bool execute_custom_commands(ParsedCmd *parsed_cmd, Shell *shell)
+{
+    if (check_exit(parsed_cmd))
+    {
+        print_exit();
+        free_mem(parsed_cmd, shell);
+        exit(0);
+    }
+    else if (check_jobs(parsed_cmd))
+    {
+        display_jobs(shell->first_job);
+        return true;
+    }
+    else if (check_fg(parsed_cmd))
+    {
+        pid_t pgid = (pid_t) atoi(parsed_cmd->args[1]);
+        Job *j = find_job(pgid, shell->first_job);
+        Job *j2 = find_job_by_job_id((int)pgid, shell->first_job);
+        if(j == NULL)
+            j = j2;
+        if(j == NULL)
+            print_fg_error();
+        else
+            continue_job(j, shell, true);
+        return true;
+    }
+    return false;
+}
+
+
+void free_mem(ParsedCmd *parsed_cmd, Shell *shell)
+{
+    for (int i = 0; i < MAX_NUM_OF_PIPES; i++)
+        free_parser_mem(parsed_cmd + i);
+    free(parsed_cmd);
+    free_shell(shell);
 }

@@ -27,6 +27,12 @@ void print_exit()
     return;
 }
 
+void print_fg_error()
+{
+    printf("\n%sCouldn't find the specified job.%s\n", YELLOW, RESET);
+    return;
+}
+
 void allocate_mem(ParsedCmd *parsed_cmd)
 {
     parsed_cmd->out = (char *) malloc(sizeof(char)*WORD_MAX_SIZE);
@@ -60,7 +66,7 @@ void allocate_mem(ParsedCmd *parsed_cmd)
 
 }
 
-void free_mem(ParsedCmd *parsed_cmd)
+void free_parser_mem(ParsedCmd *parsed_cmd)
 {
     if(parsed_cmd == NULL)
         return;
@@ -77,8 +83,6 @@ void free_mem(ParsedCmd *parsed_cmd)
         parsed_cmd->in = NULL;
     }
     free_args(0, parsed_cmd);
-    free(parsed_cmd);
-    parsed_cmd = NULL;
     return;
 }
 
@@ -119,6 +123,12 @@ int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], char *cmd_
     
     pipe_idx = parse_pipe(cmd, cmd_list, input_fds, output_fds);
 
+    if(pipe_idx > MAX_NUM_OF_PIPES)
+    {
+        printf("%sMinishell does not support that many pipes.%s\n",YELLOW, RESET);
+        return -1;
+    }
+
     for (int i = 0; i<pipe_idx && i < MAX_NUM_OF_PIPES; i++)
     {
         parse_process(cmd_list[i], parsed_cmd + i);
@@ -126,19 +136,19 @@ int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], char *cmd_
     return pipe_idx;
 }
 
-bool check_exit(char **args)
+bool check_exit(ParsedCmd *parsed_cmd)
 {
-    return strcmp(args[0], "exit") == 0;
+    return strcmp(parsed_cmd->args[0], "exit") == 0;
 }
 
-bool check_jobs(char **args)
+bool check_jobs(ParsedCmd *parsed_cmd)
 {
-    return strcmp(args[0], "jobs") == 0;
+    return strcmp(parsed_cmd->args[0], "jobs") == 0;
 }
 
-bool check_fg(char **args)
+bool check_fg(ParsedCmd *parsed_cmd)
 {
-    return strcmp(args[0], "fg") == 0;
+    return strcmp(parsed_cmd->args[0], "fg") == 0;
 }
 
 void format_file_name(char **word)
@@ -201,7 +211,6 @@ void clean_responses(ParsedCmd *parsed_cmd)
 
 void parse_process(char* cmd, ParsedCmd *parsed_cmd)
 {
-    //printf("4\n");
     char *word;
     
     // Extracts execution arguments
@@ -257,18 +266,24 @@ int parse_pipe(char* line, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int 
         format_word(&word);
         *input_fds = open_input_file(word);
     }
-    //printf("temp2: %s\n", temp2);
-    //printf("temp: %s\n", temp);
+
     cmd = strtok(temp2, "|");
-    //printf("cmd: %s\n", cmd);
+
     int i = 0;
     while (i < MAX_NUM_OF_PIPES && cmd != NULL) {
         format_word(&cmd);
         strcpy(cmd_list[i++], cmd);
-        //printf("cmd: %s\n", cmd);
         cmd = strtok(NULL, "|");
     }
-    //free_args(i, parsed_cmd);
+
     return i;
 } 
 
+ParsedCmd *create_parser()
+{
+    ParsedCmd *parsed_cmd = ((ParsedCmd *)malloc(MAX_NUM_OF_PIPES*sizeof(ParsedCmd)));
+    // Allocate memory for variables
+    for (int i = 0; i < MAX_NUM_OF_PIPES; i++)
+        allocate_mem(parsed_cmd + i);
+    return parsed_cmd;
+}

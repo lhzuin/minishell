@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <termios.h>
 
-//#define WAIT_ANY -1
 
 typedef struct Job
 {
@@ -24,10 +23,11 @@ typedef struct Job
 void create_job(Job *last_job, Job **new_job, int input_fds, int output_fds, int pipe_idx, ParsedCmd *parsed_cmds, char *cmd_line);
 void free_jobs(Job *first_job);
 Job *find_job (pid_t pgid, Job *first_job);
+Job *find_job_by_job_id (int job_id, Job *first_job);
 bool job_is_stopped (Job *j);
 bool job_is_completed (Job *j);
 void mark_job_as_running (Job *j);
-void format_job_info (Job *j, const char *status);
 void display_jobs(Job *first_job);
+void print_job(Job *job);
 
 #endif

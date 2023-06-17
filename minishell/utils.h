@@ -1,4 +1,4 @@
-// minishell.h
+// utils.h
 #ifndef UTILS_H
 #define UTILS_H
 #include <stdbool.h>
@@ -7,7 +7,6 @@
 #include "jobs.h"
 #include "process.h"
 
-// Your header file content (function prototypes, type definitions, etc.)
 #define RED "\033[0;31m"
 #define GREEN "\033[0;32m"
 #define YELLOW "\033[0;33m"
@@ -31,7 +30,9 @@ int mark_process_status (pid_t pid, int status, Shell *shell);
 void update_status (Shell *shell);
 void wait_for_job (Job *j, Shell *shell);
 void do_job_notification (Job *first_job, Shell *shell);
+bool execute_custom_commands(ParsedCmd *parsed_cmd, Shell *shell);
+void free_mem(ParsedCmd *parsed_cmd, Shell *shell);
 
 
 
-#endif // MINISHELL_H
+#endif // UTILS_H

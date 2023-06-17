@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include "parser.h"
-//#include "jobs.h"
 
 
 
@@ -21,5 +20,6 @@ typedef struct Process
 void create_process_linked_list(int pipe_idx, ParsedCmd *parsed_cmds, Process **first_process);
 void create_process(Process **last_process, Process **new_process, char **args);
 void free_processes(Process *first_process);
+void print_process(Process *p);
 
 #endif

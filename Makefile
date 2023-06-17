@@ -1,6 +1,7 @@
 # Variables
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
+DEBUGFLAGS = -ggdb#-g -DDEBUG # -DDEBUG defines DEBUG in your source code
 TARGET = shell
 SRC = main.c
 SHELL_SRC = minishell/shell.c
@@ -14,6 +15,10 @@ PROJECT_NAME = minishell
 
 # Builds and runs default target
 all: $(TARGET) run
+
+# Builds and runs debug target
+debug: CFLAGS += $(DEBUGFLAGS) # This appends the debug flags to your existing CFLAGS
+debug: all
 
 # Builds default target
 $(TARGET): $(OBJ)
