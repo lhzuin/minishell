@@ -1,10 +1,9 @@
-// minishell.h
-#ifndef MINISHELL_H
-#define MINISHELL_H
+// parser.h
+#ifndef PARSER_H
+#define PARSER_H
 #include <stdbool.h>
-//#include "jobs.h"
+#include <termios.h>
 
-// Your header file content (function prototypes, type definitions, etc.)
 #define RED "\033[0;31m"
 #define GREEN "\033[0;32m"
 #define YELLOW "\033[0;33m"
@@ -24,18 +23,21 @@ typedef struct ParsedCmd
     char *args[MAX_NUM_OF_ARGS];
 } ParsedCmd;
 
-void allocate_mem(ParsedCmd *parsed_cmd);
-void free_mem(ParsedCmd *parsed_cmd);
-void free_args(int i, ParsedCmd *parsed_cmd);
 void print_welcome();
 void print_exit();
-int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int *output_fds);
+void print_fg_error();
+void allocate_mem(ParsedCmd *parsed_cmd);
+void free_parser_mem(ParsedCmd *parsed_cmd);
+void free_args(int i, ParsedCmd *parsed_cmd);
+int read_line(ParsedCmd *parsed_cmd, char (*cmd_list)[LINE_MAX_SIZE], char *cmd_line, int *input_fds, int *output_fds);
 void read_cmd(ParsedCmd *parsed_cmd);
-//bool check_exit(ParsedCmd *parsed_cmd);
-bool check_exit(char **args);
+bool check_exit(ParsedCmd *parsed_cmd);
+bool check_jobs(ParsedCmd *parsed_cmd);
+bool check_fg(ParsedCmd *parsed_cmd);
 void format_word(char **word);
 void clean_responses(ParsedCmd *parsed_cmd);
 void parse_process(char* cmd, ParsedCmd *parsed_cmd);
 int parse_pipe(char* line, char (*cmd_list)[LINE_MAX_SIZE], int *input_fds, int *output_fds);
+ParsedCmd *create_parser();
 
-#endif // MINISHELL_H
+#endif // PARSER_H
